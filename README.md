@@ -1,4 +1,4 @@
 stochastichw
 ============
 
-Modified Newton code
+Stochastic hw
