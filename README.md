@@ -1,0 +1,4 @@
+stochastichw
+============
+
+Modified Newton code
