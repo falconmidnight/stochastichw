@@ -76,7 +76,7 @@ Norm_Hinv_grad <-  norm(as.matrix(Hinv_grad),type = "F")
 #calculate direction
 pu <- Hinv_grad/Norm_Hinv_grad
 
-#calculate new x
+#calculate new u
 unew <- u + a*pu
 f2 <- sum(fx(unew))
 while (f2 < f){
