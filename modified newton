@@ -1,0 +1,101 @@
+#GENERATE SAMPLE OF X
+#---------------------------------------------------------------#
+#Initial input data
+p1 <- .7
+p2 <- .3
+v1 <- 1
+v2 <- 1.5
+u1 <- 1
+u2_1 <- 6
+n <- 1000
+
+#Sample function
+sampleX <- function(u2,v1,v2){
+  
+  u <- runif(1,0,1)
+  if (u<=.7){
+    X<-rnorm(1,1,sqrt(v1))
+  }else{X<-rnorm(1,u2,sqrt(v2))}
+  
+  return(X)
+}
+
+#Output X
+X1 <- replicate(n,sampleX(u2_1,v1,v2))
+
+
+#MODIFIED NEWTON'S METHOD
+#---------------------------------------------------------------#
+library(MASS)
+#Initialize starting point
+u<-c(4,10)
+n <- 50
+finalu <- matrix(NA,nrow = n, ncol = 2)
+colnames(finalu) <- c("u1","u2")
+H <- matrix(NA, nrow = 2, ncol = 2)
+error <- matrix(NA,nrow = n, ncol = 2)
+norm_error <- matrix(NA,nrow = n, ncol = 1)
+a <- 1
+count <- 0
+x<-X1
+muI<- 300*diag(2)
+  
+#Function to generate f
+fx<-function(u){
+  log(p1*(1/sqrt(2*pi))*exp(-(x-u[1])^2/2)+p2*(1/sqrt(3*pi))*exp(-(x-u[2])^2/3))
+}
+f2 <- sum(fx(u))
+
+
+#Iterate and create next u
+for (i in 1:n){ 
+f <- f2
+#calculate gradient
+du_denom <- p1*(1/sqrt(2*pi))*exp(-(x-u[1])^2/2)+p2*(1/sqrt(3*pi))*exp(-(x-u[2])^2/3)
+du1 <- sum((-p1*(1/sqrt(2*pi))*(u[1]-x)*exp(-(x-u[1])^2/2))/du_denom)
+du2 <- sum((-p2*(1/sqrt(3*pi))*((u[2]-x)/1.5)*exp(-(x-u[2])^2/3))/du_denom)    
+gradu <- c(du1,du2)     
+
+#calculate Hessian
+comb_exp<-exp((-(x-u[1])^2/2)-((x-u[2])^2/3))
+con<-((7*sqrt(6))/(200*pi))
+H[1,1] <-sum((con*(u[1]^2-2*u[1]*x+x^2-1)*comb_exp-(49/(200*pi))*exp(2*(-(x-u[1])^2/2)))/du_denom^2)
+H[1,2] <-sum(((2/3)*(con*(u[1]-x)*(x-u[2])*comb_exp))/du_denom^2)
+H[2,1] <- H[1,2]
+H[2,2] <-sum(((2/3)*(con*((2/3)*u[2]^2-(2/3)*2*u[2]*x+(2/3)*x^2-1)*comb_exp-(3/(100*pi))*exp(2*(-(x-u[2])^2/3))))/du_denom^2)
+
+#Calculate inverse of Hessian
+Hinv <- ginv(H-muI)
+
+#Multiply inverse of Hessian with gradient
+Hinv_grad <- - Hinv %*% gradu
+
+#Norm of Hinv_grad
+Norm_Hinv_grad <-  norm(as.matrix(Hinv_grad),type = "F")
+
+#calculate direction
+pu <- Hinv_grad/Norm_Hinv_grad
+
+#calculate new x
+unew <- u + a*pu
+f2 <- sum(fx(unew))
+while (f2 < f){
+  a <- a/2
+  unew <- u + a*pu
+  f2 <- sum(fx(unew))
+}
+u <- unew
+finalu[i,] <- u
+count <- count + 1
+}
+
+
+#check convergence
+for (k in 2:n){
+  error[k-1,] <- c(finalu[k,1],finalu[k,2])-c(finalu[k-1,1],finalu[k-1,2])
+  norm_error[k-1] <- norm(as.matrix(error[k-1,]),type = "F")  
+}
+
+min(which(norm_error<1e-5))
+finalu[min(which(norm_error<1e-5)),]
+uhat<-finalu[min(which(norm_error<1e-5)),]
